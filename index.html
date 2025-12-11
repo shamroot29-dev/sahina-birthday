@@ -1497,6 +1497,27 @@
         position: absolute;
         top: 0;
         left: 0;
+        .videos-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 25px;
+          margin-top: 20px;
+        }
+
+        .video-item {
+          position: relative;
+          border-radius: 15px;
+          overflow: hidden;
+          background: #000;
+          aspect-ratio: 9/16;
+          animation: photoFadeIn 0.6s ease-out backwards;
+        }
+
+        .video-item video {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
         right: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.3);
@@ -1550,6 +1571,10 @@
         }
 
         .reels-grid {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+        .videos-grid {
           grid-template-columns: 1fr;
           gap: 20px;
         }
@@ -5127,9 +5152,18 @@
           document.getElementById("giftModal").classList.add("active");
         }
 
+        // ...existing code...
         function closeGiftModal() {
           document.getElementById("giftModal").classList.remove("active");
+          // Stop the surprise video when modal is closed
+          const giftModal = document.getElementById("giftModal");
+          const video = giftModal.querySelector("video");
+          if (video) {
+            video.pause();
+            video.currentTime = 0;
+          }
         }
+        // ...existing code...
 
         function closeAllDialogs() {
           document.getElementById("confirmDialog1").classList.remove("active");
@@ -5491,11 +5525,86 @@
           canvas.height = window.innerHeight;
         });
       </script>
+      <script>
+        // Ensure only one audio or video plays at a time
+        document.addEventListener(
+          "play",
+          function (e) {
+            if (e.target.tagName === "VIDEO" || e.target.tagName === "AUDIO") {
+              const media = document.querySelectorAll("video, audio");
+              media.forEach((el) => {
+                if (el !== e.target) {
+                  el.pause();
+                }
+              });
+            }
+          },
+          true
+        );
+      </script>
     </div>
     <!-- End of Page Content -->
 
     <!-- Countdown & Celebration JavaScript -->
     <script>
+      // Video section: play in fullscreen and reset on exit
+      document.addEventListener("DOMContentLoaded", function () {
+        const videosSection = document.getElementById("videosContent");
+
+        if (!videosSection) return;
+
+        const videos = videosSection.querySelectorAll("video");
+
+        videos.forEach((video) => {
+          //-------------------------------------------------
+          // 1. Go Fullscreen When Play
+          //-------------------------------------------------
+          video.addEventListener("play", function () {
+            if (document.fullscreenElement !== video) {
+              if (video.requestFullscreen) video.requestFullscreen();
+              else if (video.webkitRequestFullscreen)
+                video.webkitRequestFullscreen();
+              else if (video.msRequestFullscreen) video.msRequestFullscreen();
+            }
+          });
+
+          //-------------------------------------------------
+          // 2. Reset video + poster on Exit Fullscreen
+          //-------------------------------------------------
+          function handleFullscreenChange() {
+            const isFullscreenActive =
+              document.fullscreenElement ||
+              document.webkitFullscreenElement ||
+              document.msFullscreenElement;
+
+            if (!isFullscreenActive) {
+              if (!video.paused) video.pause();
+
+              video.currentTime = 0;
+
+              // Reset poster by forcing reflow
+              const poster = video.getAttribute("poster");
+              if (poster) {
+                video.removeAttribute("poster");
+                void video.offsetHeight; // force reflow
+                video.setAttribute("poster", poster);
+              }
+            }
+          }
+
+          // Cross-browser events
+          document.addEventListener("fullscreenchange", handleFullscreenChange);
+          document.addEventListener(
+            "webkitfullscreenchange",
+            handleFullscreenChange
+          );
+          document.addEventListener(
+            "msfullscreenchange",
+            handleFullscreenChange
+          );
+        });
+      });
+
       // Birthday date: 12-12-2025 at 00:00:00
       const birthdayDate = new Date("2025-12-11T20:03:00").getTime();
       let countdownInterval;
